@@ -8,11 +8,11 @@
 #### The system allows controlling the home by mobile phone application through Bluetooth [UART Terminal with TTL]. 
 
 #### There Are subsystems are implemented; 
-1- First You should entering user name and password\
-2- Choose Options:\
-  - a Safety door [Servo Motor] that could be opened\
-  - a light On/Off that could also be controlled\
-  - a Fan [DC Motor] On/Off\
+1- First You should entering user name and password
+2- Choose Options:
+  - a Safety door [Servo Motor] that could be opened
+  - a light On/Off that could also be controlled
+  - a Fan [DC Motor] On/Off
   -  ..
   -  ..
 
@@ -21,7 +21,7 @@
 #### In case of entering the username and password 3 times wrong, the system should give an alarm.
 
 ## Project Design:
-### The project is based on Layered Architecture and operates on a State Machine inside a Super Loop.
+### The project is based on Layered Architecture and operates inside a Super Loop.
 
 ### Peripherals used:
 
