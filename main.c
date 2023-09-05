@@ -229,16 +229,12 @@ void Password(void)
 		u8 Temp_Pass[USER_PASS_MAX_SIZE];
 
 		_delay_ms(200);
-
 		//Checking if password is correct
-		for(i = 0; i < MAX_NUMBER_OF_USERS; i++)
-		{
-			EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[i]->userNameAdd),Temp_Pass,4);
-			for(u8 InputIndex = 0; InputIndex < USER_PASS_MAX_SIZE; InputIndex++){
-				if(Input_Password[InputIndex] == Temp_Pass[InputIndex])
-				{
-					Counter++;
-				}
+		EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[Username_Password_Index]->userPassAdd),Temp_Pass,4);
+		for(u8 InputIndex = 0; InputIndex < USER_PASS_MAX_SIZE; InputIndex++){
+			if(Input_Password[InputIndex] == Temp_Pass[InputIndex])
+			{
+				Counter++;
 			}
 		}
 
