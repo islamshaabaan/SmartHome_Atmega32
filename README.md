@@ -23,14 +23,6 @@
 ## Project Design:
 ### The project is based on Layered Architecture and operates inside a Super Loop.
 
-### Peripherals used:
-
- 1. DIO: Used for controlling GPIO pins.
- 2. Timer0: used in PWM mode to create a siren sound from the buzzer
- 3. Timer1: Used in PWM mode to control the servo motor
- 4. TWI (I2C): Used for interfacing with the EEPROM
- 5. UART: Used for interfacing with the Bluetooth module
-
 ### Files:
 - #### Application Layer:
 	1. main.c
@@ -38,14 +30,14 @@
 	 1. Bluetooth_Module: Driver for HC-05 Bluetooth module and is used for interfacing with mobile phone
 	 2. EEPROM: Driver for ST24C08 EEPROM and is used to read and write data from and to the EEPROM
 	 3. SERVO: Driver used to control the Servo Motor
-   4. DC Motor: Driver used to control the DC Motor
+    	 4. DC Motor: Driver used to control the DC Motor
 	 5. SIREN: Driver used to make a siren sound from the buzzer
-   6. LED : Driver used to Control the LED
+   	 6. LED : Driver used to Control the LED
  - #### Microcontroller Abstraction Layer[MCAL]:
 	 1. DIO: Driver used to control the GPIO pins
-	 2. TIMERS: Driver used for controlling timers
-	 3. TWI: Driver used for interfacing with the I2C peripheral
-	 4. UART: Driver used for interfacing with the UART peripheral
+	 2. TIMERS: Driver used for controlling timers for Servor and Buzzer
+	 3. TWI: Driver used for interfacing with the I2C peripheral for EEPROM communications
+	 4. UART: Driver used for interfacing with the UART peripheral for bluetooth communications
 - #### Library Layer[LIB]:
 	1. BIT_MACROS: Contains bit-wise operations
 	2. STD_TYPES: Contains all the data types used
