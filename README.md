@@ -8,13 +8,14 @@
 #### The system allows controlling the home by mobile phone application through Bluetooth [UART Terminal with TTL]. 
 
 #### There Are subsystems are implemented; 
-1- First You should entering user name and password\r
-2- Choose Options:
-  - a Safety door [Servo Motor] that could be opened
-  - a light On/Off that could also be controlled
-  - a Fan [DC Motor] On/Off
-  -  ..
-  -  ..
+	1- First You should entering user name and password	
+	
+	2- Choose Options:
+	  - a Safety door [Servo Motor] that could be opened
+	  - a light On/Off that could also be controlled
+	  - a Fan [DC Motor] On/Off
+	  -  ..
+	  -  ..
 
 #### The system supports 5 users with different names and passwords, and uses an external EEPROM to read and save users' data.
 
