@@ -1,0 +1,118 @@
+/*
+ * TIMERS_interface.h
+ *
+ *  Created on: Aug 22, 2023
+ *      Author: one
+ */
+
+#ifndef MCAL_TIMERS_TIMERS_INTERFACE_H_
+#define MCAL_TIMERS_TIMERS_INTERFACE_H_
+
+
+
+typedef enum{
+	TIMER_COUNTER_0,
+	TIMER_COUNTER_1,
+	TIMER_COUNTER_2
+}TIMER_ID_t;
+
+
+
+typedef enum{
+	TIMER_1_NORMAL_MODE,
+	TIMER_1_PWM_PHASE_CORRECT_8_BIT_MODE,
+	TIMER_1_PWM_PHASE_CORRECT_9_BIT_MODE,
+	TIMER_1_PWM_PHASE_CORRECT_10_BIT_MODE,
+	TIMER_1_CTC_TOP_OCR1A_MODE,
+	TIMER_1_FAST_PWM_8_BIT_MODE,
+	TIMER_1_FAST_PWM_9_BIT_MODE,
+	TIMER_1_FAST_PWM_10_BIT_MODE,
+	TIMER_1_PWM_PHASE_FREQ_CORRECT_TOP_ICR1_MODE,
+	TIMER_1_PWM_PHASE_FREQ_CORRECT_TOP_OCR1A_MODE,
+	TIMER_1_PWM_PHASE_CORRECT_TOP_ICR1_MODE,
+	TIMER_1_PWM_PHASE_CORRECT_TOP_OCR1A_MODE,
+	TIMER_1_CTC_TOP_ICR1_MODE,
+	TIMER_1_RESERVED,
+	TIMER_1_FAST_PWM_TOP_ICR1_MODE,
+	TIMER_1_FAST_PWM_TOP_OCR1A_MODE
+}TIMER_1_MODE_t;
+
+typedef enum{
+	TIMER_1_INPUT_CAPTURE_INTERRUPT,
+	TIMER_1_OUTPUT_COMPARE_A_MATCH_INTERRUPT,
+	TIMER_1_OUTPUT_COMPARE_B_MATCH_INTERRUPT,
+	TIMER_1_OVERFLOW_INTERRUPT
+
+}TIMER_1_INTRRRUPT_t;
+
+typedef enum{
+	TIMER_NORMAL_MODE,
+	TIMER_PWM_PHASE_CORRECT_MODE,
+	TIMER_CTC_MODE,
+	TIMER_FAST_PWM_MODE
+}TIMER_0_2_MODE_t;
+
+typedef enum{
+	NON_PWM_OC0_DISCONNECTED,
+	NON_PWM_OC0_TOGGLE,
+	NON_PWM_OC0_CLEAR,
+	NON_PWM_OC0_SET
+}NON_PWM_CTC_t;
+
+
+typedef enum{
+	PWM_OC0_DISCONNECTED,
+	PWM_RESERVED,
+	PWM_OC0_CLEAR,
+	PWM_OC0_SET
+}PWM_CTC_t;
+
+
+typedef enum{
+	TIMER_STOP,
+	TIMER_PRESCALER_0,
+	TIMER_PRESCALER_8,
+	TIMER_PRESCALER_64,
+	TIMER_PRESCALER_256,
+	TIMER_PRESCALER_1024,
+	TIMER_EXT_CLOCK_FALLING,
+	TIMER_EXT_CLOCK_RISING
+}CLOCK_MODE_t;
+
+
+
+typedef enum{
+	TIMER_POLLING,
+	TIMER_INTERRUPT
+}TIMER_CALLING_MODE_t;
+
+
+typedef struct{
+	u8 timer_id;
+	u8 timer_mode;
+	u8 timer_calling_mode;
+	u8 timer_prescaller;
+	u8 timer_com_output_mode;
+	u32 timer_initial_value;
+
+}Timer;
+
+void TIMER_voidTimerInit(Timer * ptrToTimer);
+
+void TIMER_voidStartTimer(Timer * ptrToTimer);
+
+void TIMER_voidTimerSetPreloadValue(Timer * ptrToTimer,u32 COPY_u32PreloadValue);
+
+void TIMER_voidStopTimer(Timer * ptrToTimer);
+
+void Timer_voidHoldTimer(Timer * ptrToTimer);
+
+void TIMER_voidTimerSetOCRValue(Timer * ptrToTimer,u32 COPY_u32PreloadValue);
+
+void TIMER_voidTimer1SetICRValue(Timer * ptrToTimer,u32 COPY_u32PreloadValue);
+
+void TIMER_voidEnableInterruptT0();
+
+// void Timer_voidReadTimer0(Timer_0 * ptrToTimer0, u8 * COPY_ptrTimerValue);
+
+#endif /* MCAL_TIMERS_TIMERS_INTERFACE_H_ */

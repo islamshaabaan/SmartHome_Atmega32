@@ -1,0 +1,62 @@
+/*
+ * UART_config.h
+ *
+ *  Created on: Aug 21, 2023
+ *      Author: one
+ */
+
+#ifndef MCAL_UART_UART_CONFIG_H_
+#define MCAL_UART_UART_CONFIG_H_
+
+/*
+ * Option:
+ * 9600 -->51
+ *
+ *
+ */
+#define UART_BAUD_RATE 51
+
+#ifndef ENABLED
+#define ENABLED 1
+#endif
+
+#ifndef DISABLED
+#define DISABLED 0
+#endif
+
+
+
+// UCSRA Configuration
+
+#define DOUBLE_SPEED_ENABLE DISABLED
+#define MULTI_PROCESSOR_COMMUNICATION DISABLED
+
+// UCSRB Configuration
+
+#define RX_INTERRUPT_ENABLE DISABLED
+#define TX_INTERRUPT_ENABLE DISABLED
+#define EMPTY_DATA_REGISTER_INTERRUPT_ENABLE DISABLED
+#define RX_ENABLE ENABLED
+#define TX_ENABLE ENABLED
+#define DATA_SIZE 8
+
+// UCSRC Configuration
+
+#define UART_ASYNCHRONOUS_MODE 1
+#define UART_SYNCHRONOUS_MODE 0
+#define UART_MODE_SELECT UART_ASYNCHRONOUS_MODE
+
+#define PARITY_MODE_EVEN 2
+#define PARITY_MODE_ODD 3
+#define PARITY_MODE_SELECT DISABLED
+
+#define STOP_BITS_1 0
+#define STOP_BITS_2 1
+#define STOP_BITS_SELECT STOP_BITS_1
+
+#define CLOCK_POLARITY 0
+
+// UBBR Configuration
+
+
+#endif /* MCAL_UART_UART_CONFIG_H_ */

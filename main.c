@@ -1,0 +1,396 @@
+/*
+ * main.c
+ *
+ *  Created on: Aug 24, 2023
+ *      Author: Islam Shaaban
+ *      Description: Simplly, It's Smart Home :)
+ */
+
+#include <util/delay.h>
+#include <string.h>
+#include <stdlib.h>
+#include "LIB/STD_TYPES.h"
+#include "LIB/BIT_MACROS.h"
+#include "MCAL/DIO/DIO_interface.h"
+
+#include "MCAL/GIE/GIE_interface.h"
+#include "MCAL/TIMERS/TIMERS_interface.h"
+#include "MCAL/UART/UART_interface.h"
+#include "MCAL/TWI/TWI_interface.h"
+
+#include "HAL/LED/LED_interface.h"
+#include "HAL/DC_MOTOR/DCMOTOR_interface.h"
+#include "HAL/SERVO_MOTOR/SERVO_interface.h"
+#include "HAL/EEPROM/EEPROM_interface.h"
+#include "HAL/BUZZER/BUZZER_interface.h"
+
+#define F_CPU					8000000UL
+#define MAX_NUMBER_OF_USERS			5
+#define USER_NAME_MAX_SIZE			5
+#define USER_PASS_MAX_SIZE			4
+
+
+static u8 FirstTimeFlag = 0;
+typedef struct
+{
+	enu_EEPROM_Blocks block;
+	u16 userNameAdd;
+	u16 userPassAdd;
+	u8 userName[USER_NAME_MAX_SIZE];
+	u8 userPass[USER_PASS_MAX_SIZE];
+
+}User_t;
+
+User_t USER_ONE =
+{
+		.block = BLOCK0,
+		.userNameAdd = 0x00,
+		.userPassAdd = 0x18,
+		.userName = "user1",
+		.userPass = "1111"
+};
+User_t USER_TWO =
+{
+		.block = BLOCK0,
+		.userNameAdd = 0x30,
+		.userPassAdd = 0x48,
+		.userName = "user2",
+		.userPass = "2222"
+};
+User_t USER_THREE =
+{
+		.block = BLOCK0,
+		.userNameAdd = 0x60,
+		.userPassAdd = 0x78,
+		.userName = "user3",
+		.userPass = "3333"
+};
+User_t USER_FOUR =
+{
+		.block = BLOCK0,
+		.userNameAdd = 0x90,
+		.userPassAdd = 0xA8,
+		.userName = "user4",
+		.userPass = "4444"
+};
+User_t USER_FIVE =
+{
+		.block = BLOCK0,
+		.userNameAdd = 0xC0,
+		.userPassAdd = 0xD8,
+		.userName = "user5",
+		.userPass = "5555"
+};
+User_t *dbAccounts[MAX_NUMBER_OF_USERS] =
+{
+		&USER_ONE,
+		&USER_TWO,
+		&USER_THREE,
+		&USER_FOUR,
+		&USER_FIVE
+};
+//u8 Usernames[MAX_NUMBER_OF_USERS][USER_NAME_MAX_SIZE]={"user1","user2","user3","user4","user5"};
+//u8 Passwords[MAX_NUMBER_OF_USERS][USER_PASS_MAX_SIZE]={"1111","2222","3333","4444","5555"};
+/* Application Part */
+LED_t RedLed ={DIO_PORTD, DIO_PIN7, LED_ACTIVE_HIGH};
+LED_t GreenLed = {DIO_PORTD, DIO_PIN6, LED_ACTIVE_HIGH};
+LED_t Light = {DIO_PORTC, DIO_PIN4, LED_ACTIVE_HIGH};
+
+u8 Input_Username[USER_NAME_MAX_SIZE];				//to store username entered by user
+u8 Input_Password[USER_PASS_MAX_SIZE];				//to store password entered by user
+u8 Username_Password_Index; 		// Used to indicate which password index to look at
+u8 Username_valid_login_flag = 0;	//used to indicate if username is valid
+u8 Username_trials = 3;
+u8 Password_valid_login_flag = 0;	//used to indicate if password is valid
+u8 Password_trials = 3;
+Servo Servo_Motor;
+
+/* Function to save a string with known length into another variable
+void app_clear_string(u8* Copy_u8InputString, u8 Copy_u8Length){
+	for(int i=0;i<Copy_u8Length;i++){
+ *(Copy_u8InputString+i) = NULL_ADDRESS;
+	}
+}
+void app_copy_string(u8* Copy_u8InputString, u8* Copy_u8OutputString, u8 Copy_u8Length){
+	app_clear_string(Copy_u8OutputString, 20);
+	for(int i=0;i<Copy_u8Length;i++){
+		Copy_u8OutputString[i] = Copy_u8InputString[i];
+	}
+}*/
+
+void Show_Usernames_PWs(){
+
+	UART_voidSendStringSync_Tx((u8*)"Default Users\r");
+	u8 Ret_Username[USER_NAME_MAX_SIZE];
+	u8 Ret_Password[USER_PASS_MAX_SIZE];
+
+	for(u8 i=0; i < MAX_NUMBER_OF_USERS; i++ ){
+		EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[i]->userNameAdd),Ret_Username,5);
+		for(u8 j=0; j <USER_NAME_MAX_SIZE; j++){
+			UART_voidSendDataSync_Tx(Ret_Username[j]);
+		}
+
+		UART_voidSendStringSync_Tx((u8*)"-");
+		EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[i]->userPassAdd),Ret_Password,4);
+		for(u8 k=0; k <USER_PASS_MAX_SIZE; k++){
+			UART_voidSendDataSync_Tx(Ret_Password[k]);
+		}
+
+		UART_voidSendStringSync_Tx((u8*)"\r");
+	}
+	//UART_voidClearBuffer();
+}
+void Save_DataBaseInEEPROM(){
+	for(u8 i = 0; i< MAX_NUMBER_OF_USERS; i++){
+		for(u8 j=0; j<USER_NAME_MAX_SIZE; j++){
+			EEPROM_ErrorStateSendDataByte1((dbAccounts[i]->userNameAdd)+j,dbAccounts[i]->userName[j]);
+		}
+		for(u8 j=0; j<USER_PASS_MAX_SIZE; j++){
+			EEPROM_ErrorStateSendDataByte1((dbAccounts[i]->userPassAdd)+j,dbAccounts[i]->userPass[j]);
+		}
+
+	}
+
+
+}
+void Username(void)
+{
+
+	while(Username_trials > 0 && Username_valid_login_flag == 0)
+	{
+		UART_voidSendStringSync_Tx((u8 *)"\rEnter Username: ");
+		// the end of the name is ENTER
+		UART_voidReceiveStringSync_Rx(Input_Username);	//receive the username
+
+		u8 Local_u8Iterator;
+		u8 Counter = 0;
+
+		_delay_ms(200);
+		u8 Temp_username[USER_NAME_MAX_SIZE];
+		//Checking if username is valid
+		for(Local_u8Iterator=0; Local_u8Iterator < MAX_NUMBER_OF_USERS; Local_u8Iterator++ ){
+			EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[Local_u8Iterator]->userNameAdd),Temp_username,5);
+			for(u8 InputIndex = 0; InputIndex < USER_NAME_MAX_SIZE; InputIndex++){
+				if(Input_Username[InputIndex] == Temp_username[InputIndex])
+				{
+					Counter++;
+				}
+			}
+
+			if(Counter==USER_NAME_MAX_SIZE)	//username is correct
+			{
+				Username_Password_Index = Local_u8Iterator;
+				break;
+			}
+			else
+			{
+				Counter = 0;
+			}
+		}
+
+		if(Counter==USER_NAME_MAX_SIZE)	//username is correct
+		{
+			Username_valid_login_flag = 1;
+			_delay_ms(500);
+		}
+		else
+		{
+			Username_trials--;	//wrong username -1 trial
+			UART_voidSendStringSync_Tx((u8*)"\rInvalid Username \n");
+			LED_voidOFF(&GreenLed); // LED green OFF
+			LED_voidON(&RedLed); // LED red ON
+
+			_delay_ms(300);
+		}
+
+	}
+	if(Username_trials == 0 && Username_valid_login_flag==0)	//out of trials
+	{
+		UART_voidSendStringSync_Tx((u8*)"\rOut of Trials, System Failure!");
+		LED_voidOFF(&GreenLed); // LED green OFF
+		LED_voidON(&RedLed); // LED red ON
+
+		while(1){
+			SIREN_vChangeSound(5000);
+		}
+	}
+}
+void Password(void)
+{
+	while(Password_trials > 0 && Password_valid_login_flag == 0)
+	{
+		UART_voidSendStringSync_Tx((u8*)"\rEnter Password: ");
+		for(u8 PW = 0 ; PW < USER_PASS_MAX_SIZE ; PW++){
+			Input_Password[PW] = UART_u8ReceiveDataSync_Rx();
+			UART_voidSendDataSync_Tx('*');
+		}
+		u8 i;	//Local iterator
+		u8 Counter = 0;
+		u8 Temp_Pass[USER_PASS_MAX_SIZE];
+
+		_delay_ms(200);
+
+		//Checking if password is correct
+		for(i = 0; i < MAX_NUMBER_OF_USERS; i++)
+		{
+			EEPROM_ErrorStateRecieveStreamDataByte((dbAccounts[i]->userNameAdd),Temp_Pass,4);
+			for(u8 InputIndex = 0; InputIndex < USER_PASS_MAX_SIZE; InputIndex++){
+				if(Input_Password[InputIndex] == Temp_Pass[InputIndex])
+				{
+					Counter++;
+				}
+			}
+		}
+
+		if(Counter == USER_PASS_MAX_SIZE)	//password is correct
+		{
+			Password_valid_login_flag=1;
+			UART_voidSendStringSync_Tx((u8*)"\rWelcome Home! :) \n");
+			//UART_voidSendStringSync_Tx("Door is Opening... \n");
+			LED_voidON(&GreenLed); // LED green ON
+			LED_voidOFF(&RedLed); // LED red OFF
+			_delay_ms(1000);
+		}
+		else
+		{
+			Password_trials--;	//wrong password -1 trial
+			UART_voidSendStringSync_Tx((u8*)"\rInvalid Password, Try again \n");
+			LED_voidOFF(&GreenLed); // LED green OFF
+			LED_voidON(&RedLed); // LED red ON
+			_delay_ms(300);
+		}
+	}
+
+	if(Password_trials == 0 && Password_valid_login_flag == 0)	//out of trials
+	{
+		UART_voidSendStringSync_Tx((u8*)"\rInvalid Password, out of tries \n");
+		UART_voidSendStringSync_Tx((u8*)"\rSystem is Failure \n");
+		LED_voidOFF(&GreenLed); // LED green OFF
+		LED_voidON(&RedLed); // LED red ON
+
+		while(1){
+			SIREN_vChangeSound(10000);
+
+		}
+	}
+}
+void OpenDoor(Servo * Servo_Motor){
+	u16 Local_u8Angle = 90;
+	SERVO_voidSetAngle(Servo_Motor,(u16)Local_u8Angle);
+	UART_voidSendStringSync_Tx((u8*)"\rDoor will closed after 5 second.\n");
+	_delay_ms(5000);
+	SERVO_voidSetAngle(Servo_Motor,(u16)0);
+
+}
+void System_Init(){
+	UART_voidInit();
+	TWI_voidInitMaster(5);
+	LED_voidInit(&GreenLed);
+	LED_voidInit(&RedLed);
+	LED_voidInit(&Light);
+	DCMOTOR_voidInit();
+	SERVO_voidServoInit(&Servo_Motor);
+	Siren_vInit();
+	EEPROM_ErrorStateReadDataByte1(0xFF,&FirstTimeFlag);
+	UART_voidSendDataSync_Tx(FirstTimeFlag);
+	if(FirstTimeFlag != 1){
+		Save_DataBaseInEEPROM();
+		FirstTimeFlag = 1;
+		EEPROM_ErrorStateSendDataByte1(0xFF,FirstTimeFlag);
+	}
+	UART_voidSendStringSync_Tx( (u8*)"Welcome To Smart Home .. \r\n");
+	UART_voidSendStringSync_Tx( (u8*)"\r__________________________ \r\n");
+	Show_Usernames_PWs();
+}
+
+int main(){
+	System_Init();
+	u8 Local_u8ReceivedData;	//variable used to take option entered by user from function "Options"
+	while(1){
+		Username();
+		Password();
+		do{
+			UART_voidSendStringSync_Tx( (u8*)"\rChoose one of the following options: \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to change user name, press 0 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to change Password, press 1 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to Open the door, press 2");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to turn on the lights, press 3 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to turn off the lights, press 4 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to turn on the fan, press 5 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to turn off the fan, press 6 \n");
+			UART_voidSendStringSync_Tx( (u8*)"\r-> to Exit the menu, press 8 \r \n");
+
+			Local_u8ReceivedData =(u8) UART_u8ReceiveDataSync_Rx();
+			UART_voidSendDataSync_Tx(Local_u8ReceivedData);
+
+			switch(Local_u8ReceivedData){
+			case '0' :
+				UART_voidSendStringSync_Tx((u8*)"\rChanging Username \n");
+				UART_voidSendStringSync_Tx((u8*)"\rEnter New UserName \n");
+				for(u8 UN = 0 ; UN < USER_NAME_MAX_SIZE ; UN++){
+					Input_Username[UN] = UART_u8ReceiveDataSync_Rx();
+					UART_voidSendDataSync_Tx(Input_Username[UN] );
+				}
+				/*Save The User Name in EEPROM*/
+				for(u8 j=0; j<USER_NAME_MAX_SIZE; j++){
+					dbAccounts[Username_Password_Index]->userName[j]=Input_Username[j];
+					EEPROM_ErrorStateSendDataByte1((dbAccounts[Username_Password_Index]->userNameAdd)+j,dbAccounts[Username_Password_Index]->userName[j]);
+				}
+				Show_Usernames_PWs();
+				break;
+			case '1' :
+				UART_voidSendStringSync_Tx((u8*)"\rChanging PW \n");
+				UART_voidSendStringSync_Tx((u8*)"\rEnter New PW \n");
+				for(u8 PW = 0 ; PW < USER_PASS_MAX_SIZE ; PW++){
+					Input_Password[PW] = UART_u8ReceiveDataSync_Rx();
+					UART_voidSendDataSync_Tx('*');
+					UART_voidSendDataSync_Tx(Input_Password[PW]);
+				}
+				/*Save The Password in EEPROM*/
+				for(u8 j=0; j<USER_NAME_MAX_SIZE; j++){
+					dbAccounts[Username_Password_Index]->userPass[j]=Input_Password[j];
+					EEPROM_ErrorStateSendDataByte1((dbAccounts[Username_Password_Index]->userPassAdd)+j,dbAccounts[Username_Password_Index]->userPass[j]);
+				}
+				Show_Usernames_PWs();
+				break;
+			case '2' :
+				OpenDoor(&Servo_Motor);
+				break;
+			case '3' :
+				LED_voidON(&Light); // LED red ON
+				UART_voidSendStringSync_Tx((u8*)"\rLED ON \n");	// send status of LED (LED ON)
+				break;
+			case '4' :
+				LED_voidOFF(&Light);	// Turn OFF LED
+				UART_voidSendStringSync_Tx((u8*)"\rLED OFF \n");  //send status of LED (LED OFF)
+				break;
+			case '5' :
+				DCMOTOR_voidCWRotate();
+				UART_voidSendStringSync_Tx((u8*)"\rFAN ON \n");  //send status of Motor (FAN ON)
+				break;
+			case '6' :
+				DCMOTOR_voidStop();
+				UART_voidSendStringSync_Tx((u8*)"\rFAN OFF \n");  //send status of Motor (FAN OFF)
+				break;
+
+			case '8' :
+				Username_valid_login_flag = 0;
+				Password_valid_login_flag = 0;
+
+				break;
+
+			default :
+				UART_voidSendStringSync_Tx((u8*)"\rInvalid option \n");	// tell user to enter a valid option
+				UART_voidSendDataSync_Tx(Local_u8ReceivedData);
+				LED_voidOFF(&GreenLed); // LED green OFF
+				LED_voidON(&RedLed); // LED red ON
+
+				break;
+			}
+		}while(Local_u8ReceivedData != '8');
+
+
+	}
+	return 1;
+}
+
